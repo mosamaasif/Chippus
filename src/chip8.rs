@@ -1,0 +1,315 @@
+use rand::Rng;
+
+use crate::keyboard::Keyboard;
+use crate::screen::Screen;
+
+pub struct Emulator {
+    ram: [u8; 4096], // The actual Memory or RAM
+    stack: Vec<u16>, // 16 entires of 16 bits each
+    v: [u8; 16],     // 8-bit 16 registers (v0-vF)
+    i: u16,          // The 16-bit Index Register
+    pc: u16,         // 16-bit program counter
+    delay_timer: u8, // 8-bit delay timer
+    sound_timer: u8, // 8-bit sound timer,
+
+    screen: Screen,     // screen structure
+    keyboard: Keyboard, // keyboard structure
+}
+
+impl Emulator {
+    pub fn new() -> Emulator {
+        let fonts = [
+            0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
+            0x20, 0x60, 0x20, 0x20, 0x70, // 1
+            0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
+            0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
+            0x90, 0x90, 0xF0, 0x10, 0x10, // 4
+            0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
+            0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
+            0xF0, 0x10, 0x20, 0x40, 0x40, // 7
+            0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
+            0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
+            0xF0, 0x90, 0xF0, 0x90, 0x90, // A
+            0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
+            0xF0, 0x80, 0x80, 0x80, 0xF0, // C
+            0xE0, 0x90, 0x90, 0x90, 0xE0, // D
+            0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
+            0xF0, 0x80, 0xF0, 0x80, 0x80, // F
+        ];
+
+        let mut mem = [0u8; 4096];
+        mem[(0x050 as usize)..=(0x09F as usize)].copy_from_slice(&fonts);
+
+        Emulator {
+            pc: 0x200 as u16,
+            ram: mem,
+            stack: Vec::new(),
+            v: [0; 16],
+            i: 0,
+            delay_timer: 0,
+            sound_timer: 0,
+            screen: Screen::new(),
+            keyboard: Keyboard::new(),
+        }
+    }
+
+    fn fetch_instruction(&self) -> u16 {
+        (self.ram[(self.pc as usize)] as u16) << 8 | (self.ram[(self.pc as usize)] as u16)
+    }
+
+    fn execute_instruction(&mut self, instruction: u16) {
+        let nibbles = (
+            ((instruction & 0xF000) >> 12) as u8,
+            ((instruction & 0x0F00) >> 8) as u8,
+            ((instruction & 0x00F0) >> 4) as u8,
+            (instruction & 0x000F) as u8,
+        );
+
+        match nibbles {
+            // This is used to clear the screen (CLS) (00E0)
+            (0, 0, 0xE, 0) => {
+                self.screen.clear();
+            }
+
+            // Returns from a subroutine (RET) (00EE)
+            (0, 0, 0xE, 0xE) => {
+                if let Some(address) = self.stack.pop() {
+                    self.pc = address;
+                }
+            }
+
+            // Jump to address nnn (JP addr) (1nnn)
+            (1, _, _, _) => {
+                self.pc = instruction & 0x0FFF;
+            }
+
+            // calls subroutine at address nnn(CALL addr) (2nnn)
+            (2, _, _, _) => {
+                self.stack.push(self.pc);
+                self.pc = instruction & 0x0FFF;
+            }
+
+            // if value at register x is equal to kk, then skip next instruction (SE Vx, byte) (3xkk)
+            (3, _, _, _) => {
+                if self.v[nibbles.1 as usize] == ((instruction & 0x00FF) as u8) {
+                    self.pc += 2;
+                }
+            }
+
+            // if value at register x is not equal to kk, then skip next instruction (SNE Vx, byte) (4xkk)
+            (4, _, _, _) => {
+                if self.v[nibbles.1 as usize] != ((instruction & 0x00FF) as u8) {
+                    self.pc += 2;
+                }
+            }
+
+            // if value at register x is equal to register y, then skip next instruction (SE Vx, Vy) (5xy0)
+            (5, _, _, 0) => {
+                if self.v[nibbles.1 as usize] == self.v[nibbles.2 as usize] {
+                    self.pc += 2;
+                }
+            }
+
+            // put value kk into register x (LD Vx, byte) (6xkk)
+            (6, _, _, _) => {
+                self.v[nibbles.1 as usize] = (instruction & 0x00FF) as u8;
+            }
+
+            // add value kk into register x (ADD Vx, byte) (7xkk)
+            (7, _, _, _) => {
+                let x = nibbles.1 as usize;
+                self.v[x] = self.v[x].wrapping_add((instruction & 0x00FF) as u8);
+            }
+
+            // set value of register Vy into Vx (LD Vx, Vy) (8xy0)
+            (8, _, _, 0) => {
+                self.v[nibbles.1 as usize] = self.v[nibbles.2 as usize];
+            }
+
+            // OR value of register Vy with Vx and set in Vx (OR Vx, Vy) (8xy1)
+            (8, _, _, 1) => {
+                self.v[nibbles.1 as usize] |= self.v[nibbles.2 as usize];
+            }
+
+            // AND value of register Vy with Vx and set in Vx (AND Vx, Vy) (8xy2)
+            (8, _, _, 2) => {
+                self.v[nibbles.1 as usize] &= self.v[nibbles.1 as usize];
+            }
+
+            // XOR value of register Vy with Vx and set in Vx (XOR Vx, Vy) (8xy3)
+            (8, _, _, 3) => {
+                self.v[nibbles.1 as usize] ^= self.v[nibbles.2 as usize];
+            }
+
+            // ADD value of register Vy into Vx and set in Vx (ADD Vx, Vy) (8xy4)
+            (8, _, _, 4) => {
+                let x = nibbles.1 as usize;
+                let y = nibbles.2 as usize;
+                let (res, overflow) = self.v[x].overflowing_add(self.v[y]);
+
+                self.v[x] = res;
+                self.v[0xF] = overflow as u8;
+            }
+
+            // SUB value of register Vy from Vx and set in Vx (SUB Vx, Vy) (8xy5)
+            (8, _, _, 5) => {
+                let x = nibbles.1 as usize;
+                let y = nibbles.2 as usize;
+                let (res, overflow) = self.v[x].overflowing_sub(self.v[y]);
+
+                self.v[x] = res;
+                self.v[0xF] = !overflow as u8;
+            }
+
+            // Shift right Vx by 1 (SHR Vx) {, Vy} (8xy6)
+            (8, _, _, 6) => {
+                let x = nibbles.1 as usize;
+                self.v[0xF] = self.v[x] & 1;
+                self.v[x] >>= 1;
+            }
+
+            // SUB value of register Vx from Vy and set in Vx (SUBN Vx, Vy) (8xy7)
+            (8, _, _, 7) => {
+                let x = nibbles.1 as usize;
+                let y = nibbles.2 as usize;
+                let (res, overflow) = self.v[y].overflowing_sub(self.v[x]);
+
+                self.v[x] = res;
+                self.v[0xF] = !overflow as u8;
+            }
+
+            // Shift left Vx by 1 (SHL Vx) {, Vy} (8xyE)
+            (8, _, _, 0xE) => {
+                let x = nibbles.1 as usize;
+                self.v[0xF] = self.v[x] & 0x80;
+                self.v[x] <<= 1;
+            }
+
+            (9, _, _, 0) => {
+                if self.v[nibbles.1 as usize] != self.v[nibbles.2 as usize] {
+                    self.pc += 2;
+                }
+            }
+
+            // set i to nnn (LD I, addr) (Annn)
+            (0xA, _, _, _) => {
+                self.i = instruction & 0x0FFF;
+            }
+
+            // jump to v0 + nnn (JP v0, addr) (Annn)
+            (0xB, _, _, _) => {
+                self.pc = (instruction & 0x0FFF) + (self.v[0] as u16);
+            }
+
+            // random value AND kk and set value in Vx register (RNG Vx, byte) (Cxkk)
+            (0xC, _, _, _) => {
+                let mut rng = rand::thread_rng();
+                self.v[nibbles.1 as usize] = rng.gen::<u8>() & ((instruction & 0x00FF) as u8);
+            }
+
+            // display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision (DRW Vx, Vy, nibble) (Dxyn)
+            (0xD, _, _, _) => {
+                let x_coord = self.v[nibbles.1 as usize] as usize;
+                let y_coord = self.v[nibbles.2 as usize] as usize;
+
+                self.v[0xF] = self.screen.draw(
+                    (x_coord, y_coord),
+                    &self.ram[(self.i as usize)..((self.i + (nibbles.3 as u16)) as usize)],
+                ) as u8;
+            }
+
+            // if key with value Vx is pressed, skip next instruction (SKP Vx) (Ex9E)
+            (0xE, _, 9, 0xE) => {
+                if self
+                    .keyboard
+                    .is_key_pressed(self.v[nibbles.1 as usize] as usize)
+                {
+                    self.pc += 2;
+                }
+            }
+
+            // if key with value Vx is not pressed, skip next instruction (SKP Vx) (Ex9E)
+            (0xE, _, 0xA, 1) => {
+                if !self
+                    .keyboard
+                    .is_key_pressed(self.v[nibbles.1 as usize] as usize)
+                {
+                    self.pc += 2;
+                }
+            }
+
+            // value of delay timer in  Vx (LD Vx, DT) (Fx07)
+            (0xF, _, 0, 7) => {
+                self.v[nibbles.1 as usize] = self.delay_timer;
+            }
+
+            // wait until key pressed, and store in  Vx (LD Vx, K) (Fx0A)
+            (0xF, _, 0, 0xA) => {
+                if let Some(key) = self.keyboard.get_pressed_key() {
+                    self.v[nibbles.1 as usize] = key;
+                } else {
+                    self.pc -= 2; // move it back, so it stays on this instruction without halting thread
+                }
+            }
+
+            // set delay timer value equal to Vx (LD DT, Vx) (Fx15)
+            (0xF, _, 1, 5) => {
+                self.delay_timer = self.v[nibbles.1 as usize];
+            }
+
+            // set sound timer equal to Vx (LD ST, Vx) (Fx18)
+            (0xF, _, 1, 8) => {
+                self.sound_timer = self.v[nibbles.1 as usize];
+            }
+
+            // set i to i + Vx (ADD I, Vx) (Fx1E)
+            (0xF, _, 1, 0xE) => {
+                self.i += self.v[nibbles.1 as usize] as u16;
+            }
+
+            // set i equal to location of sprite = Vx value (ADD I, Vx) (Fx29)
+            (0xF, _, 2, 9) => {
+                self.i = (5 * self.v[nibbles.1 as usize]) as u16;
+            }
+
+            // store BCD representation of Vx in memory locations I, I+1, and I+2 (LD B, Vx) (Fx33)
+            (0xF, _, 3, 3) => {
+                let x = nibbles.1 as usize;
+                self.ram[self.i as usize] = self.v[x] / 100;
+                self.ram[(self.i as usize) + 1] = (self.v[x] / 10) % 10;
+                self.ram[(self.i as usize) + 2] = self.v[x] % 10;
+            }
+
+            // store register V0 to Vx values in memory starting from location at reg (LD[I], Vx) (Fx55)
+            (0xF, _, 5, 5) => {
+                let x = nibbles.1 as u16;
+                self.ram[(self.i as usize)..=((self.i + x) as usize)]
+                    .copy_from_slice(&self.v[0..=(x as usize)]);
+                self.i += x + 1;
+            }
+
+            // store register V0 to Vx equal to values in memory starting from location at I (LD Vx, [I]) (Fx56)
+            (0xF, _, 5, 6) => {
+                let x = nibbles.1 as u16;
+                self.v[0..=(x as usize)]
+                    .copy_from_slice(&self.ram[(self.i as usize)..=((self.i + x) as usize)]);
+                self.i += x + 1;
+            }
+
+            // To enter a subroutine (SYS addr) (0nnn)
+            (0, _, _, _) => {
+                // ignoring 0nnn, this is for older computer.
+            }
+
+            _ => {}
+        }
+    }
+
+    pub fn execute_cycle(&mut self) {
+        // fetch instruction from memory
+        let instruction = self.fetch_instruction();
+
+        // decode and execute instruction
+        self.execute_instruction(instruction);
+    }
+}
