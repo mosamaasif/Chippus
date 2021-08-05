@@ -146,7 +146,7 @@ impl Application {
             (window, size, surface)
         };
 
-        let hdpi_factor = window.scale_factor();
+        let mut hdpi_factor = 1.0;
 
         let adapter = block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::HighPerformance,
@@ -250,13 +250,13 @@ impl Application {
                 ControlFlow::Poll
             };
             match event {
-                // Event::WindowEvent {
-                //     event: WindowEvent::ScaleFactorChanged { scale_factor, .. },
-                //     ..
-                // } => {
-                //     hdpi_factor = scale_factor;
-                //     println!()
-                // }
+                Event::WindowEvent {
+                    event: WindowEvent::ScaleFactorChanged { scale_factor, .. },
+                    ..
+                } => {
+                    hdpi_factor = scale_factor;
+                    println!()
+                }
                 Event::WindowEvent {
                     event: WindowEvent::Resized(_),
                     ..

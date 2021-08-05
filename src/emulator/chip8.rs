@@ -1,3 +1,4 @@
+use rand::prelude::ThreadRng;
 use rand::Rng;
 use std::fs;
 use std::path::PathBuf;
@@ -19,6 +20,7 @@ pub struct Emulator {
     pub keyboard: Keyboard, // keyboard structure
     pause: bool,            // a way to pause emulator,
     rom_len: usize,         // size of rom loaded into memory or length of code
+    rng: ThreadRng,
 }
 
 impl Emulator {
@@ -42,12 +44,9 @@ impl Emulator {
             0xF0, 0x80, 0xF0, 0x80, 0x80, // F
         ];
 
-        let mut mem = [0u8; 4096];
-        mem[(0x050 as usize)..=(0x09F as usize)].copy_from_slice(&fonts);
-
-        Emulator {
+        let mut emu = Emulator {
             pc: 0x200 as u16,
-            ram: mem,
+            ram: [0u8; 4096],
             stack: Vec::new(),
             v: [0; 16],
             i: 0,
@@ -58,11 +57,16 @@ impl Emulator {
             pause: true,
             rom_len: 0,
             total_dt: 0.0f32,
-        }
+            rng: ThreadRng::default(),
+        };
+
+        emu.ram[..fonts.len()].copy_from_slice(&fonts[..]);
+
+        emu
     }
 
     fn fetch_instruction(&self) -> u16 {
-        (self.ram[(self.pc as usize)] as u16) << 8 | (self.ram[(self.pc as usize)] as u16)
+        (self.ram[(self.pc as usize)] as u16) << 8 | (self.ram[(self.pc as usize) + 1] as u16)
     }
 
     fn execute_instruction(&mut self, instruction: u16) {
@@ -83,7 +87,7 @@ impl Emulator {
                     // Returns from a subroutine (RET) (00EE)
                     0xE => {
                         if let Some(address) = self.stack.pop() {
-                            self.pc = address;
+                            self.pc = address
                         }
                     }
                     _ => (),
@@ -179,7 +183,7 @@ impl Emulator {
                     // Shift left Vx by 1 (SHL Vx) {, Vy} (8xyE)
                     0xE => {
                         let x = nibbles.1 as usize;
-                        self.v[0xF] = self.v[x] & 0x80;
+                        self.v[0xF] = self.v[x] >> 7;
                         self.v[x] <<= 1;
                     }
                     _ => (),
@@ -204,8 +208,7 @@ impl Emulator {
 
             // random value AND kk and set value in Vx register (RNG Vx, byte) (Cxkk)
             (0xC, _, _, _) => {
-                let mut rng = rand::thread_rng();
-                self.v[nibbles.1 as usize] = rng.gen::<u8>() & ((instruction & 0x00FF) as u8);
+                self.v[nibbles.1 as usize] = self.rng.gen::<u8>() & ((instruction & 0x00FF) as u8);
             }
 
             // display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision (DRW Vx, Vy, nibble) (Dxyn)
@@ -271,11 +274,11 @@ impl Emulator {
 
                     // set i equal to location of sprite = Vx value (ADD I, Vx) (Fx29)
                     (0x2, 0x9) => {
-                        self.i = (5 * self.v[nibbles.1 as usize]) as u16;
+                        self.i = self.v[nibbles.1 as usize] as u16 * 5;
                     }
 
                     // store BCD representation of Vx in memory locations I, I+1, and I+2 (LD B, Vx) (Fx33)
-                    (3, 3) => {
+                    (0x3, 0x3) => {
                         let x = nibbles.1 as usize;
                         self.ram[self.i as usize] = self.v[x] / 100;
                         self.ram[(self.i as usize) + 1] = (self.v[x] / 10) % 10;
@@ -285,16 +288,16 @@ impl Emulator {
                     // store register V0 to Vx values in memory starting from location at reg (LD[I], Vx) (Fx55)
                     (0x5, 0x5) => {
                         let x = nibbles.1 as u16;
-                        self.ram[(self.i as usize)..=((self.i + x) as usize)]
-                            .copy_from_slice(&self.v[0..=(x as usize)]);
+                        self.ram[(self.i as usize)..((self.i + x + 1) as usize)]
+                            .copy_from_slice(&self.v[0..((x + 1) as usize)]);
                         self.i += x + 1;
                     }
 
                     // store register V0 to Vx equal to values in memory starting from location at I (LD Vx, [I]) (Fx56)
                     (0x5, 0x6) => {
                         let x = nibbles.1 as u16;
-                        self.v[0..=(x as usize)].copy_from_slice(
-                            &self.ram[(self.i as usize)..=((self.i + x) as usize)],
+                        self.v[0..((x + 1) as usize)].copy_from_slice(
+                            &self.ram[(self.i as usize)..((self.i + x + 1) as usize)],
                         );
                         self.i += x + 1;
                     }
@@ -345,6 +348,7 @@ impl Emulator {
         self.rom_len = contents.len();
 
         self.pause = false;
+        self.rng = rand::thread_rng();
     }
 
     pub fn code_memory_location(&self) -> (usize, usize) {

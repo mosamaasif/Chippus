@@ -1,5 +1,7 @@
+use winit::event::ScanCode;
+
 pub struct Screen {
-    pub buffer: Vec<u8>,
+    pub buffer: [u8; Screen::WIDTH * Screen::HEIGHT],
     dirty: bool,
 }
 
@@ -8,18 +10,16 @@ impl Screen {
     pub const HEIGHT: usize = 32;
 
     pub fn new() -> Screen {
-        let mut screen = Screen {
-            buffer: Vec::new(),
+        let screen = Screen {
+            buffer: [0u8; Screen::HEIGHT * Screen::WIDTH],
             dirty: true,
         };
-
-        screen.buffer.resize(Screen::WIDTH * Screen::HEIGHT, 0);
 
         screen
     }
 
     pub fn clear(&mut self) {
-        self.buffer = Vec::new();
+        self.buffer = [0u8; Screen::HEIGHT * Screen::WIDTH];
         self.set_dirty(true);
     }
 
