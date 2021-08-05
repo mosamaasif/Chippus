@@ -4,8 +4,8 @@ pub struct Screen {
 }
 
 impl Screen {
-    const WIDTH: usize = 64;
-    const HEIGHT: usize = 32;
+    pub const WIDTH: usize = 64;
+    pub const HEIGHT: usize = 32;
 
     pub fn new() -> Screen {
         let mut screen = Screen {
@@ -19,7 +19,7 @@ impl Screen {
     }
 
     pub fn clear(&mut self) {
-        self.buffer.clear();
+        self.buffer = Vec::new();
         self.set_dirty(true);
     }
 

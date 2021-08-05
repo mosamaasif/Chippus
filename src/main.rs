@@ -1,6 +1,11 @@
-pub mod app;
-mod chip8;
-pub mod keyboard;
-pub mod screen;
+use application::app::Application;
 
-fn main() {}
+mod application;
+mod emulator;
+
+use std::rc::Rc;
+
+fn main() {
+    let app = Rc::new(Application::new());
+    app.run()
+}

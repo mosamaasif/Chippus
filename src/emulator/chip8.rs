@@ -1,19 +1,24 @@
 use rand::Rng;
+use std::fs;
+use std::path::PathBuf;
 
-use crate::keyboard::Keyboard;
-use crate::screen::Screen;
+use crate::emulator::keyboard::Keyboard;
+use crate::emulator::screen::Screen;
 
 pub struct Emulator {
-    ram: [u8; 4096], // The actual Memory or RAM
-    stack: Vec<u16>, // 16 entires of 16 bits each
-    v: [u8; 16],     // 8-bit 16 registers (v0-vF)
-    i: u16,          // The 16-bit Index Register
-    pc: u16,         // 16-bit program counter
-    delay_timer: u8, // 8-bit delay timer
-    sound_timer: u8, // 8-bit sound timer,
+    pub ram: [u8; 4096], // The actual Memory or RAM
+    pub stack: Vec<u16>, // 16 entires of 16 bits each
+    pub v: [u8; 16],     // 8-bit 16 registers (v0-vF)
+    pub i: u16,          // The 16-bit Index Register
+    pub pc: u16,         // 16-bit program counter
+    pub delay_timer: u8, // 8-bit delay timer
+    pub sound_timer: u8, // 8-bit sound timer,
+    total_dt: f32,       // total delay timer value
 
-    screen: Screen,     // screen structure
-    keyboard: Keyboard, // keyboard structure
+    pub screen: Screen,     // screen structure
+    pub keyboard: Keyboard, // keyboard structure
+    pause: bool,            // a way to pause emulator,
+    rom_len: usize,         // size of rom loaded into memory or length of code
 }
 
 impl Emulator {
@@ -50,6 +55,9 @@ impl Emulator {
             sound_timer: 0,
             screen: Screen::new(),
             keyboard: Keyboard::new(),
+            pause: true,
+            rom_len: 0,
+            total_dt: 0.0f32,
         }
     }
 
@@ -65,6 +73,8 @@ impl Emulator {
             (instruction & 0x000F) as u8,
         );
 
+        self.pc += 2;
+
         match nibbles {
             (0x0, 0x0, 0xE, _) => {
                 match nibbles.3 {
@@ -76,6 +86,7 @@ impl Emulator {
                             self.pc = address;
                         }
                     }
+                    _ => (),
                 }
             }
 
@@ -171,6 +182,7 @@ impl Emulator {
                         self.v[0xF] = self.v[x] & 0x80;
                         self.v[x] <<= 1;
                     }
+                    _ => (),
                 }
             }
 
@@ -227,6 +239,7 @@ impl Emulator {
                             self.pc += 2;
                         }
                     }
+                    _ => (),
                 }
             }
 
@@ -285,6 +298,7 @@ impl Emulator {
                         );
                         self.i += x + 1;
                     }
+                    _ => (),
                 }
             }
 
@@ -297,11 +311,54 @@ impl Emulator {
         }
     }
 
-    pub fn execute_cycle(&mut self) {
-        // fetch instruction from memory
-        let instruction = self.fetch_instruction();
+    pub fn execute_cycle(&mut self, dt: f32) {
+        if !self.pause {
+            self.update_timer(dt);
+            // fetch instruction from memory
+            let instruction = self.fetch_instruction();
 
-        // decode and execute instruction
-        self.execute_instruction(instruction);
+            // decode and execute instruction
+            self.execute_instruction(instruction);
+        }
+    }
+
+    pub fn load_rom(&mut self, romfile: &PathBuf) {
+        // Reset emulator
+        *self = Self::new();
+
+        // Load ROM from file
+        let contents = match fs::read(romfile) {
+            Err(e) => {
+                println!(
+                    "Failed to read file: '{0}', [ERROR]: {1}",
+                    romfile.display(),
+                    e
+                );
+                std::process::exit(0)
+            }
+            Ok(f) => f,
+        };
+
+        // Copy rom in memory
+        self.ram[(0x200 as usize)..(0x200 + contents.len() as usize)]
+            .copy_from_slice(&contents[..]);
+        self.rom_len = contents.len();
+
+        self.pause = false;
+    }
+
+    pub fn code_memory_location(&self) -> (usize, usize) {
+        (0x200, 0x200 + self.rom_len)
+    }
+
+    fn update_timer(&mut self, dt: f32) {
+        if self.delay_timer > 0 {
+            self.total_dt += dt;
+            const TIMER_PERIOD: f32 = 1.0 / 60.0;
+            while self.total_dt > TIMER_PERIOD {
+                self.total_dt -= TIMER_PERIOD;
+                self.delay_timer -= 1;
+            }
+        }
     }
 }

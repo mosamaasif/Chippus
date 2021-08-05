@@ -1,9 +1,17 @@
 [package]
 name = "chip8_emulator"
 version = "0.1.0"
+authors = ["Muhammad Osama Asif <osamaasif07@gmail.com>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+glob = "0.3.0"
+wgpu = "0.9.0"
+imgui = "0.7.0"
+winit = "0.25.0"
+imgui-winit-support = { version = "0.7.1", default-features = false, features = ["winit-25"] }
 rand = "0.8.4"
+futures = "0.3.16"
+clap = "2.33.3"
+image = "0.23.14"
+imgui-wgpu = "0.16.0"
