@@ -3,9 +3,8 @@ use crate::emulator::screen::Screen;
 use imgui::*;
 use imgui_wgpu::{Renderer, Texture, TextureConfig};
 use wgpu::{
-    util::{BufferInitDescriptor, DeviceExt},
-    BufferUsage, CommandEncoderDescriptor, Device, Extent3d, ImageCopyBuffer, ImageCopyTexture,
-    ImageDataLayout, Origin3d, Queue, TextureFormat, TextureUsage,
+    CommandEncoderDescriptor, Device, Extent3d, ImageCopyTexture, ImageDataLayout, Origin3d, Queue,
+    TextureFormat, TextureUsage,
 };
 
 pub struct RGBA {
@@ -62,7 +61,7 @@ impl EmulatorWindow {
     }
 
     pub fn render(&mut self, ui: &imgui::Ui) {
-        let win = imgui::Window::new(im_str!("Emulator Window")).always_auto_resize(true);
+        let win = imgui::Window::new(im_str!("Emulator Window")).resizable(false);
         win.position([5.0f32, 5.0f32], imgui::Condition::Once)
             .build(&ui, || {
                 Image::new(
@@ -84,7 +83,8 @@ impl EmulatorWindow {
                     g: color[1],
                     b: color[2],
                     a: color[3],
-                }
+                };
+                ui.same_line(0.0f32);
             });
     }
 
@@ -146,35 +146,20 @@ impl EmulatorWindow {
         device: &Device,
         queue: &mut Queue,
     ) -> Option<bool> {
-        // Create the wgpu texture.
-
-        // Upload the actual data to a wgpu buffer.
-        let bytes = self.data.len();
-        let buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: None,
-            usage: BufferUsage::COPY_SRC,
-            contents: &self.data,
-        });
-
         // Make sure we have an active encoder.
-        let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor { label: None });
+        let encoder = device.create_command_encoder(&CommandEncoderDescriptor { label: None });
 
-        let img_cl = ImageDataLayout {
-            offset: 0,
-            bytes_per_row: std::num::NonZeroU32::new(bytes as u32 / self.height as u32),
-            rows_per_image: std::num::NonZeroU32::new(self.height as u32),
-        };
-
-        // Schedule a copy from the buffer to the texture.
-        encoder.copy_buffer_to_texture(
-            ImageCopyBuffer {
-                buffer: &buffer,
-                layout: img_cl,
-            },
+        queue.write_texture(
             ImageCopyTexture {
                 texture: &renderer.textures.get(self.tex_id)?.texture(),
                 mip_level: 0,
                 origin: Origin3d { x: 0, y: 0, z: 0 },
+            },
+            &self.data,
+            ImageDataLayout {
+                offset: 0,
+                bytes_per_row: std::num::NonZeroU32::new(self.width as u32 * 4),
+                rows_per_image: std::num::NonZeroU32::new(self.height as u32),
             },
             Extent3d {
                 width: self.width as u32,

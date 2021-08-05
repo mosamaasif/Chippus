@@ -35,6 +35,7 @@ impl Application {
         let win = imgui::Window::new(im_str!("ROMs Available"));
         win.size([400.0f32, 560.0f32], Condition::Once)
             .position([905.0f32, 5.0f32], Condition::Once)
+            .resizable(false)
             .build(&ui, || {
                 for rom in &self.roms {
                     let filename = ImString::new(rom.file_name().unwrap().to_str().unwrap());
@@ -49,6 +50,7 @@ impl Application {
         window
             .size([300.0f32, 210.0f32], Condition::FirstUseEver)
             .position([600.0f32, 355.0f32], Condition::Once)
+            .resizable(false)
             .build(&ui, || {
                 ui.text(format!("PC: {:#X}", self.emulator.pc));
                 ui.text(format!("I: {:#X}", self.emulator.i));
@@ -76,6 +78,7 @@ impl Application {
         window
             .size([300.0, 345.0], Condition::FirstUseEver)
             .position([600.0, 5.0], Condition::Once)
+            .resizable(false)
             .build(&ui, || {
                 let code_location = self.emulator.code_memory_location();
                 let pc = self.emulator.pc as usize;
@@ -101,6 +104,7 @@ impl Application {
         window
             .size([590.0, 210.0], Condition::FirstUseEver)
             .position([5.0, 355.0], Condition::Once)
+            .resizable(false)
             .build(&ui, || {
                 ui.text(im_str!(
                     "1) Select ROM file.\n2) Controls:\n1,2,3,4,\nQ,W,E,R,\nA,S,D,F,\nZ,X,C,V"
@@ -134,6 +138,7 @@ impl Application {
 
         let (window, size, surface) = {
             let window = Window::new(&event_loop).unwrap();
+            window.set_resizable(false);
             window.set_inner_size(LogicalSize {
                 width: 1310.0,
                 height: 570.0,
@@ -146,7 +151,7 @@ impl Application {
             (window, size, surface)
         };
 
-        let hidpi_factor = window.scale_factor();
+        let hidpi_factor = 2.0;
 
         let adapter = block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::HighPerformance,
@@ -160,7 +165,7 @@ impl Application {
         // Set up swap chain
         let sc_desc = wgpu::SwapChainDescriptor {
             usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
-            format: wgpu::TextureFormat::Bgra8Unorm,
+            format: wgpu::TextureFormat::Bgra8UnormSrgb,
             width: size.width as u32,
             height: size.height as u32,
             present_mode: wgpu::PresentMode::Mailbox,
@@ -191,33 +196,33 @@ impl Application {
         }]);
 
         // Restyle a bit
-        let style = imgui.style_mut();
-        style.window_rounding = 8.0;
-        style.scrollbar_rounding = 8.0;
-        style.frame_rounding = 8.0;
-        style[imgui::StyleColor::TitleBg] = RGBA::to_rgba_normalized([110, 110, 100, 62]);
-        style[imgui::StyleColor::TitleBgCollapsed] = RGBA::to_rgba_normalized([110, 110, 100, 52]);
-        style[imgui::StyleColor::TitleBgActive] = RGBA::to_rgba_normalized([110, 110, 100, 87]);
-        style[imgui::StyleColor::Header] = RGBA::to_rgba_normalized([110, 110, 110, 52]);
-        style[imgui::StyleColor::HeaderHovered] = RGBA::to_rgba_normalized([110, 110, 110, 92]);
-        style[imgui::StyleColor::HeaderActive] = RGBA::to_rgba_normalized([110, 110, 110, 72]);
-        style[imgui::StyleColor::ScrollbarBg] = RGBA::to_rgba_normalized([110, 110, 110, 12]);
-        style[imgui::StyleColor::ScrollbarGrab] = RGBA::to_rgba_normalized([110, 110, 110, 52]);
-        style[imgui::StyleColor::ScrollbarGrabHovered] =
-            RGBA::to_rgba_normalized([110, 110, 110, 92]);
-        style[imgui::StyleColor::ScrollbarGrabActive] =
-            RGBA::to_rgba_normalized([110, 110, 110, 72]);
-        style[imgui::StyleColor::SliderGrab] = RGBA::to_rgba_normalized([110, 110, 110, 52]);
-        style[imgui::StyleColor::SliderGrabActive] = RGBA::to_rgba_normalized([110, 110, 110, 72]);
-        style[imgui::StyleColor::Button] = RGBA::to_rgba_normalized([182, 182, 182, 60]);
-        style[imgui::StyleColor::ButtonHovered] = RGBA::to_rgba_normalized([182, 182, 182, 200]);
-        style[imgui::StyleColor::ButtonActive] = RGBA::to_rgba_normalized([182, 182, 182, 140]);
-        style[imgui::StyleColor::PopupBg] = RGBA::to_rgba_normalized([0, 0, 0, 230]);
-        style[imgui::StyleColor::TextSelectedBg] = RGBA::to_rgba_normalized([10, 23, 18, 180]);
-        style[imgui::StyleColor::FrameBg] = RGBA::to_rgba_normalized([70, 70, 70, 30]);
-        style[imgui::StyleColor::FrameBgHovered] = RGBA::to_rgba_normalized([70, 70, 70, 70]);
-        style[imgui::StyleColor::FrameBgActive] = RGBA::to_rgba_normalized([70, 70, 70, 50]);
-        style[imgui::StyleColor::MenuBarBg] = RGBA::to_rgba_normalized([70, 70, 70, 30]);
+        // let style = imgui.style_mut();
+        // style.window_rounding = 8.0;
+        // style.scrollbar_rounding = 8.0;
+        // style.frame_rounding = 8.0;
+        // style[imgui::StyleColor::TitleBg] = RGBA::to_rgba_normalized([110, 110, 100, 62]);
+        // style[imgui::StyleColor::TitleBgCollapsed] = RGBA::to_rgba_normalized([110, 110, 100, 52]);
+        // style[imgui::StyleColor::TitleBgActive] = RGBA::to_rgba_normalized([110, 110, 100, 87]);
+        // style[imgui::StyleColor::Header] = RGBA::to_rgba_normalized([110, 110, 110, 52]);
+        // style[imgui::StyleColor::HeaderHovered] = RGBA::to_rgba_normalized([110, 110, 110, 92]);
+        // style[imgui::StyleColor::HeaderActive] = RGBA::to_rgba_normalized([110, 110, 110, 72]);
+        // style[imgui::StyleColor::ScrollbarBg] = RGBA::to_rgba_normalized([110, 110, 110, 12]);
+        // style[imgui::StyleColor::ScrollbarGrab] = RGBA::to_rgba_normalized([110, 110, 110, 52]);
+        // style[imgui::StyleColor::ScrollbarGrabHovered] =
+        //     RGBA::to_rgba_normalized([110, 110, 110, 92]);
+        // style[imgui::StyleColor::ScrollbarGrabActive] =
+        //     RGBA::to_rgba_normalized([110, 110, 110, 72]);
+        // style[imgui::StyleColor::SliderGrab] = RGBA::to_rgba_normalized([110, 110, 110, 52]);
+        // style[imgui::StyleColor::SliderGrabActive] = RGBA::to_rgba_normalized([110, 110, 110, 72]);
+        // style[imgui::StyleColor::Button] = RGBA::to_rgba_normalized([182, 182, 182, 60]);
+        // style[imgui::StyleColor::ButtonHovered] = RGBA::to_rgba_normalized([182, 182, 182, 200]);
+        // style[imgui::StyleColor::ButtonActive] = RGBA::to_rgba_normalized([182, 182, 182, 140]);
+        // style[imgui::StyleColor::PopupBg] = RGBA::to_rgba_normalized([0, 0, 0, 230]);
+        // style[imgui::StyleColor::TextSelectedBg] = RGBA::to_rgba_normalized([10, 23, 18, 180]);
+        // style[imgui::StyleColor::FrameBg] = RGBA::to_rgba_normalized([70, 70, 70, 30]);
+        // style[imgui::StyleColor::FrameBgHovered] = RGBA::to_rgba_normalized([70, 70, 70, 70]);
+        // style[imgui::StyleColor::FrameBgActive] = RGBA::to_rgba_normalized([70, 70, 70, 50]);
+        // style[imgui::StyleColor::MenuBarBg] = RGBA::to_rgba_normalized([70, 70, 70, 30]);
 
         // Setup dear imgui wgpu renderer
         let clear_color = wgpu::Color {
@@ -227,8 +232,10 @@ impl Application {
             a: 1.0,
         };
 
-        let mut renderer_config = RendererConfig::new_srgb();
-        renderer_config.texture_format = sc_desc.format;
+        let renderer_config = RendererConfig {
+            texture_format: sc_desc.format,
+            ..Default::default()
+        };
 
         let mut renderer = Renderer::new(&mut imgui, &device, &mut queue, renderer_config);
 
@@ -256,7 +263,7 @@ impl Application {
 
                     let sc_desc = wgpu::SwapChainDescriptor {
                         usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
-                        format: wgpu::TextureFormat::Bgra8Unorm,
+                        format: wgpu::TextureFormat::Bgra8UnormSrgb,
                         width: size.width as u32,
                         height: size.height as u32,
                         present_mode: wgpu::PresentMode::Mailbox,
