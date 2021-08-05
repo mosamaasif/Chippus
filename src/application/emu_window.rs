@@ -74,8 +74,6 @@ impl EmulatorWindow {
                 .tint_col(self.color.to_array())
                 .build(&ui);
 
-                //ui.input_float(im_str!("Scale"), &mut self.scale).build();
-                //ui.same_line(0.0f32);
                 let mut color = self.color.to_array();
                 imgui::ColorEdit::new(im_str!("Main Color"), &mut color).build(&ui);
                 self.color = RGBA {
@@ -84,7 +82,6 @@ impl EmulatorWindow {
                     b: color[2],
                     a: color[3],
                 };
-                ui.same_line(0.0f32);
             });
     }
 

@@ -151,7 +151,7 @@ impl Application {
             (window, size, surface)
         };
 
-        let hidpi_factor = 2.0;
+        let hidpi_factor = 1.0;
 
         let adapter = block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::HighPerformance,
