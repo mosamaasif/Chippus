@@ -1,5 +1,3 @@
-use winit::event::ScanCode;
-
 pub struct Screen {
     pub buffer: [u8; Screen::WIDTH * Screen::HEIGHT],
     dirty: bool,

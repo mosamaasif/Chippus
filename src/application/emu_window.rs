@@ -77,7 +77,14 @@ impl EmulatorWindow {
 
                 //ui.input_float(im_str!("Scale"), &mut self.scale).build();
                 //ui.same_line(0.0f32);
-                imgui::ColorEdit::new(im_str!("Main Color"), &mut self.color.to_array()).build(&ui);
+                let mut color = self.color.to_array();
+                imgui::ColorEdit::new(im_str!("Main Color"), &mut color).build(&ui);
+                self.color = RGBA {
+                    r: color[0],
+                    g: color[1],
+                    b: color[2],
+                    a: color[3],
+                }
             });
     }
 
@@ -91,18 +98,18 @@ impl EmulatorWindow {
         for x in 0..self.width {
             for y in 0..self.height {
                 let v = if emulator.screen.get_pixel(x, y) == 1 {
-                    255u8
+                    0xFF
                 } else {
                     0
                 };
 
                 let pos = (y * 4 * self.width) + (x * 4);
-                self.data[pos..pos + 4].copy_from_slice(&[v, v, v, 255u8]);
+                self.data[pos..pos + 4].copy_from_slice(&[v, v, v, 0xFF]);
             }
         }
 
         // Uploaded updated screen texture data
-        self.update_texture(self.tex_id, renderer, &device, &mut queue);
+        self.update_texture(renderer, &device, &mut queue);
     }
 
     /// Creates a new wgpu texture made from the imgui font atlas.
@@ -135,7 +142,6 @@ impl EmulatorWindow {
     /// Creates and uploads a new wgpu texture made from the imgui font atlas.
     fn update_texture(
         &mut self,
-        id: TextureId,
         renderer: &Renderer,
         device: &Device,
         queue: &mut Queue,
@@ -147,7 +153,7 @@ impl EmulatorWindow {
         let buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: None,
             usage: BufferUsage::COPY_SRC,
-            contents: &self.data[..],
+            contents: &self.data,
         });
 
         // Make sure we have an active encoder.
@@ -166,7 +172,7 @@ impl EmulatorWindow {
                 layout: img_cl,
             },
             ImageCopyTexture {
-                texture: &renderer.textures.get(id)?.texture(),
+                texture: &renderer.textures.get(self.tex_id)?.texture(),
                 mip_level: 0,
                 origin: Origin3d { x: 0, y: 0, z: 0 },
             },

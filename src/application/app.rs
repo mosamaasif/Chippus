@@ -146,7 +146,7 @@ impl Application {
             (window, size, surface)
         };
 
-        let mut hdpi_factor = 1.0;
+        let hidpi_factor = window.scale_factor();
 
         let adapter = block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::HighPerformance,
@@ -178,8 +178,8 @@ impl Application {
         );
         imgui.set_ini_filename(None);
 
-        let font_size = (13.0 * hdpi_factor) as f32;
-        imgui.io_mut().font_global_scale = (1.0 / hdpi_factor) as f32;
+        let font_size = (13.0 * hidpi_factor) as f32;
+        imgui.io_mut().font_global_scale = (1.0 / hidpi_factor) as f32;
 
         imgui.fonts().add_font(&[FontSource::DefaultFontData {
             config: Some(imgui::FontConfig {
@@ -227,10 +227,8 @@ impl Application {
             a: 1.0,
         };
 
-        let renderer_config = RendererConfig {
-            texture_format: sc_desc.format,
-            ..Default::default()
-        };
+        let mut renderer_config = RendererConfig::new_srgb();
+        renderer_config.texture_format = sc_desc.format;
 
         let mut renderer = Renderer::new(&mut imgui, &device, &mut queue, renderer_config);
 
@@ -250,13 +248,6 @@ impl Application {
                 ControlFlow::Poll
             };
             match event {
-                Event::WindowEvent {
-                    event: WindowEvent::ScaleFactorChanged { scale_factor, .. },
-                    ..
-                } => {
-                    hdpi_factor = scale_factor;
-                    println!()
-                }
                 Event::WindowEvent {
                     event: WindowEvent::Resized(_),
                     ..
