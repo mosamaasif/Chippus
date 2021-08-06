@@ -44,7 +44,7 @@ impl EmulatorWindow {
             data: vec![0; Screen::WIDTH * Screen::HEIGHT * 4],
             width: Screen::WIDTH,
             height: Screen::HEIGHT,
-            scale: 9.0f32,
+            scale: 11.0f32,
             color: RGBA {
                 r: 0.19f32,
                 g: 0.66f32,
@@ -60,7 +60,7 @@ impl EmulatorWindow {
         }
     }
 
-    pub fn render(&mut self, ui: &imgui::Ui) {
+    pub fn render(&mut self, ui: &imgui::Ui, emulator: &mut Emulator, dt: f32) {
         let win = imgui::Window::new(im_str!("Emulator Window")).resizable(false);
         win.position([5.0f32, 5.0f32], imgui::Condition::Once)
             .build(&ui, || {
@@ -82,6 +82,21 @@ impl EmulatorWindow {
                     b: color[2],
                     a: color[3],
                 };
+
+                ui.same_line(0.0f32);
+                if ui.button(im_str!("PAUSE"), [0f32, 0f32]) {
+                    emulator.pause = true;
+                }
+                ui.same_line(0.0f32);
+                if ui.button(im_str!("START"), [0f32, 0f32]) {
+                    emulator.pause = false;
+                }
+                ui.same_line(0.0f32);
+                if ui.button(im_str!("STEP"), [0f32, 0f32]) {
+                    emulator.pause = false;
+                    emulator.execute_cycle(dt);
+                    emulator.pause = true;
+                }
             });
     }
 

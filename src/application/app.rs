@@ -11,7 +11,7 @@ use std::rc::Rc;
 use std::time::Instant;
 use wgpu::Instance;
 use winit::{
-    dpi::LogicalSize,
+    dpi::{LogicalPosition, LogicalSize},
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::Window,
@@ -33,8 +33,8 @@ impl Application {
     pub fn render(&mut self, ui: &imgui::Ui) {
         // Window with list of ROMs
         let win = imgui::Window::new(im_str!("ROMs Available"));
-        win.size([400.0f32, 560.0f32], Condition::Once)
-            .position([905.0f32, 5.0f32], Condition::Once)
+        win.size([355.0f32, 623.0f32], Condition::Once)
+            .position([1031.0f32, 5.0f32], Condition::Once)
             .resizable(false)
             .build(&ui, || {
                 for rom in &self.roms {
@@ -49,7 +49,7 @@ impl Application {
         let window = imgui::Window::new(im_str!("Current CPU State"));
         window
             .size([300.0f32, 210.0f32], Condition::FirstUseEver)
-            .position([600.0f32, 355.0f32], Condition::Once)
+            .position([728.0f32, 418.0f32], Condition::Once)
             .resizable(false)
             .build(&ui, || {
                 ui.text(format!("PC: {:#X}", self.emulator.pc));
@@ -76,8 +76,8 @@ impl Application {
         // Window with program code
         let window = imgui::Window::new(im_str!("Code"));
         window
-            .size([300.0, 345.0], Condition::FirstUseEver)
-            .position([600.0, 5.0], Condition::Once)
+            .size([300.0, 410.0], Condition::FirstUseEver)
+            .position([728.0, 5.0], Condition::Once)
             .resizable(false)
             .build(&ui, || {
                 let code_location = self.emulator.code_memory_location();
@@ -100,15 +100,16 @@ impl Application {
             });
 
         // Help Window
-        let window = imgui::Window::new(im_str!("Help"));
+        let window = imgui::Window::new(im_str!("About"));
         window
-            .size([590.0, 210.0], Condition::FirstUseEver)
-            .position([5.0, 355.0], Condition::Once)
+            .size([720.0, 210.0], Condition::FirstUseEver)
+            .position([5.0, 418.0], Condition::Once)
             .resizable(false)
             .build(&ui, || {
-                ui.text(im_str!(
-                    "1) Select ROM file.\n2) Controls:\n1,2,3,4,\nQ,W,E,R,\nA,S,D,F,\nZ,X,C,V"
-                ));
+                ui.text(im_str!("Welcome to CHIPPUS! Yet another Chip8 Emulator written by a noob learning Rust!"));
+                ui.text(im_str!("\nHow to use this Emulator?"));
+                ui.text(im_str!("Step - 1:\n\tSelect ROM file."));
+                ui.text(im_str!("\nStep - 2:\n\tUse these Controls:\n\t1,2,3,4,\n\tQ,W,E,R,\n\tA,S,D,F,\n\tZ,X,C,V"));
             });
     }
 
@@ -131,6 +132,7 @@ impl Application {
     }
 
     pub fn run(mut self: Rc<Self>) {
+        env_logger::init();
         // Set up window and GPU
         let event_loop = EventLoop::new();
 
@@ -140,10 +142,12 @@ impl Application {
             let window = Window::new(&event_loop).unwrap();
             window.set_resizable(false);
             window.set_inner_size(LogicalSize {
-                width: 1310.0,
-                height: 570.0,
+                width: 1390.0,
+                height: 632.0,
             });
             window.set_title("CHIPPUS - CHIP8 EMU");
+            //TODO: Should be dynamic
+            window.set_outer_position(LogicalPosition { x: 20.0, y: 100.0 });
             let size = window.inner_size();
 
             let surface = unsafe { instance.create_surface(&window) };
@@ -339,7 +343,7 @@ impl Application {
                     // Draw actual app UI
                     self_mut.render(&ui);
                     // Draw screen window
-                    screen.render(&ui);
+                    screen.render(&ui, &mut self_mut.emulator, ui.io().delta_time);
 
                     let mut encoder: wgpu::CommandEncoder = device
                         .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });

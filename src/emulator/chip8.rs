@@ -18,7 +18,7 @@ pub struct Emulator {
 
     pub screen: Screen,     // screen structure
     pub keyboard: Keyboard, // keyboard structure
-    pause: bool,            // a way to pause emulator,
+    pub pause: bool,        // a way to pause emulator,
     rom_len: usize,         // size of rom loaded into memory or length of code
     rng: ThreadRng,
 }
