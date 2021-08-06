@@ -1,15 +1,14 @@
 use super::emu_window::{self, EmulatorWindow};
 use crate::emulator::{chip8, keyboard::Keyboard};
+use crate::imgui_wgpu_backend::Renderer;
 use emu_window::RGBA;
 use futures::executor::block_on;
 use glob::glob;
 use imgui::*;
-use imgui_wgpu::{Renderer, RendererConfig};
 use imgui_winit_support;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::time::Instant;
-use wgpu::Instance;
 use winit::{
     dpi::{LogicalPosition, LogicalSize},
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
@@ -131,12 +130,40 @@ impl Application {
         self.emulator.keyboard.set(Keyboard::map_key(code), state)
     }
 
+    fn set_ui_style(&self, imgui: &mut Context) {
+        let style = imgui.style_mut();
+        style.window_rounding = 8.0;
+        style.scrollbar_rounding = 8.0;
+        style.frame_rounding = 8.0;
+        style[imgui::StyleColor::TitleBg] = RGBA::to_rgba_normalized([110, 110, 100, 62]);
+        style[imgui::StyleColor::TitleBgCollapsed] = RGBA::to_rgba_normalized([110, 110, 100, 52]);
+        style[imgui::StyleColor::TitleBgActive] = RGBA::to_rgba_normalized([110, 110, 100, 87]);
+        style[imgui::StyleColor::Header] = RGBA::to_rgba_normalized([110, 110, 110, 52]);
+        style[imgui::StyleColor::HeaderHovered] = RGBA::to_rgba_normalized([110, 110, 110, 92]);
+        style[imgui::StyleColor::HeaderActive] = RGBA::to_rgba_normalized([110, 110, 110, 72]);
+        style[imgui::StyleColor::ScrollbarBg] = RGBA::to_rgba_normalized([110, 110, 110, 12]);
+        style[imgui::StyleColor::ScrollbarGrab] = RGBA::to_rgba_normalized([110, 110, 110, 52]);
+        style[imgui::StyleColor::ScrollbarGrabHovered] =
+            RGBA::to_rgba_normalized([110, 110, 110, 92]);
+        style[imgui::StyleColor::ScrollbarGrabActive] =
+            RGBA::to_rgba_normalized([110, 110, 110, 72]);
+        style[imgui::StyleColor::SliderGrab] = RGBA::to_rgba_normalized([110, 110, 110, 52]);
+        style[imgui::StyleColor::SliderGrabActive] = RGBA::to_rgba_normalized([110, 110, 110, 72]);
+        style[imgui::StyleColor::Button] = RGBA::to_rgba_normalized([182, 182, 182, 60]);
+        style[imgui::StyleColor::ButtonHovered] = RGBA::to_rgba_normalized([182, 182, 182, 200]);
+        style[imgui::StyleColor::ButtonActive] = RGBA::to_rgba_normalized([182, 182, 182, 140]);
+        style[imgui::StyleColor::PopupBg] = RGBA::to_rgba_normalized([0, 0, 0, 230]);
+        style[imgui::StyleColor::TextSelectedBg] = RGBA::to_rgba_normalized([10, 23, 18, 180]);
+        style[imgui::StyleColor::FrameBg] = RGBA::to_rgba_normalized([70, 70, 70, 30]);
+        style[imgui::StyleColor::FrameBgHovered] = RGBA::to_rgba_normalized([70, 70, 70, 70]);
+        style[imgui::StyleColor::FrameBgActive] = RGBA::to_rgba_normalized([70, 70, 70, 50]);
+        style[imgui::StyleColor::MenuBarBg] = RGBA::to_rgba_normalized([70, 70, 70, 30]);
+    }
+
     pub fn run(mut self: Rc<Self>) {
         env_logger::init();
         // Set up window and GPU
         let event_loop = EventLoop::new();
-
-        let instance = Instance::new(wgpu::BackendBit::PRIMARY);
 
         let (window, size, surface) = {
             let window = Window::new(&event_loop).unwrap();
@@ -150,25 +177,28 @@ impl Application {
             window.set_outer_position(LogicalPosition { x: 20.0, y: 100.0 });
             let size = window.inner_size();
 
-            let surface = unsafe { instance.create_surface(&window) };
+            let surface = wgpu::Surface::create(&window);
 
             (window, size, surface)
         };
 
         let hidpi_factor = 1.0;
 
-        let adapter = block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
-            power_preference: wgpu::PowerPreference::HighPerformance,
-            compatible_surface: Some(&surface),
-        }))
+        let adapter = block_on(wgpu::Adapter::request(
+            &wgpu::RequestAdapterOptions {
+                power_preference: wgpu::PowerPreference::HighPerformance,
+                compatible_surface: Some(&surface),
+            },
+            wgpu::BackendBit::PRIMARY,
+        ))
         .unwrap();
 
         let (device, mut queue) =
-            block_on(adapter.request_device(&wgpu::DeviceDescriptor::default(), None)).unwrap();
+            block_on(adapter.request_device(&wgpu::DeviceDescriptor::default()));
 
         // Set up swap chain
         let sc_desc = wgpu::SwapChainDescriptor {
-            usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
+            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
             format: wgpu::TextureFormat::Bgra8UnormSrgb,
             width: size.width as u32,
             height: size.height as u32,
@@ -199,49 +229,23 @@ impl Application {
             }),
         }]);
 
-        // Restyle a bit
-        // let style = imgui.style_mut();
-        // style.window_rounding = 8.0;
-        // style.scrollbar_rounding = 8.0;
-        // style.frame_rounding = 8.0;
-        // style[imgui::StyleColor::TitleBg] = RGBA::to_rgba_normalized([110, 110, 100, 62]);
-        // style[imgui::StyleColor::TitleBgCollapsed] = RGBA::to_rgba_normalized([110, 110, 100, 52]);
-        // style[imgui::StyleColor::TitleBgActive] = RGBA::to_rgba_normalized([110, 110, 100, 87]);
-        // style[imgui::StyleColor::Header] = RGBA::to_rgba_normalized([110, 110, 110, 52]);
-        // style[imgui::StyleColor::HeaderHovered] = RGBA::to_rgba_normalized([110, 110, 110, 92]);
-        // style[imgui::StyleColor::HeaderActive] = RGBA::to_rgba_normalized([110, 110, 110, 72]);
-        // style[imgui::StyleColor::ScrollbarBg] = RGBA::to_rgba_normalized([110, 110, 110, 12]);
-        // style[imgui::StyleColor::ScrollbarGrab] = RGBA::to_rgba_normalized([110, 110, 110, 52]);
-        // style[imgui::StyleColor::ScrollbarGrabHovered] =
-        //     RGBA::to_rgba_normalized([110, 110, 110, 92]);
-        // style[imgui::StyleColor::ScrollbarGrabActive] =
-        //     RGBA::to_rgba_normalized([110, 110, 110, 72]);
-        // style[imgui::StyleColor::SliderGrab] = RGBA::to_rgba_normalized([110, 110, 110, 52]);
-        // style[imgui::StyleColor::SliderGrabActive] = RGBA::to_rgba_normalized([110, 110, 110, 72]);
-        // style[imgui::StyleColor::Button] = RGBA::to_rgba_normalized([182, 182, 182, 60]);
-        // style[imgui::StyleColor::ButtonHovered] = RGBA::to_rgba_normalized([182, 182, 182, 200]);
-        // style[imgui::StyleColor::ButtonActive] = RGBA::to_rgba_normalized([182, 182, 182, 140]);
-        // style[imgui::StyleColor::PopupBg] = RGBA::to_rgba_normalized([0, 0, 0, 230]);
-        // style[imgui::StyleColor::TextSelectedBg] = RGBA::to_rgba_normalized([10, 23, 18, 180]);
-        // style[imgui::StyleColor::FrameBg] = RGBA::to_rgba_normalized([70, 70, 70, 30]);
-        // style[imgui::StyleColor::FrameBgHovered] = RGBA::to_rgba_normalized([70, 70, 70, 70]);
-        // style[imgui::StyleColor::FrameBgActive] = RGBA::to_rgba_normalized([70, 70, 70, 50]);
-        // style[imgui::StyleColor::MenuBarBg] = RGBA::to_rgba_normalized([70, 70, 70, 30]);
+        self.set_ui_style(&mut imgui);
 
         // Setup dear imgui wgpu renderer
         let clear_color = wgpu::Color {
-            r: 0.03,
-            g: 0.03,
-            b: 0.03,
-            a: 1.0,
+            r: 0.0,
+            g: 0.0,
+            b: 0.0,
+            a: 0.0,
         };
 
-        let renderer_config = RendererConfig {
-            texture_format: sc_desc.format,
-            ..Default::default()
-        };
-
-        let mut renderer = Renderer::new(&mut imgui, &device, &mut queue, renderer_config);
+        let mut renderer = Renderer::new(
+            &mut imgui,
+            &device,
+            &mut queue,
+            sc_desc.format,
+            Some(clear_color),
+        );
 
         let mut last_frame = Instant::now();
 
@@ -266,7 +270,7 @@ impl Application {
                     let size = window.inner_size();
 
                     let sc_desc = wgpu::SwapChainDescriptor {
-                        usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
+                        usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
                         format: wgpu::TextureFormat::Bgra8UnormSrgb,
                         width: size.width as u32,
                         height: size.height as u32,
@@ -318,7 +322,7 @@ impl Application {
                     imgui.io_mut().update_delta_time(now - last_frame);
                     last_frame = now;
 
-                    let frame = match swap_chain.get_current_frame() {
+                    let frame = match swap_chain.get_next_texture() {
                         Ok(frame) => frame,
                         Err(e) => {
                             eprintln!("dropped frame: {:?}", e);
@@ -353,26 +357,11 @@ impl Application {
                         platform.prepare_render(&ui, &window);
                     }
 
-                    let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                        label: None,
-                        color_attachments: &[wgpu::RenderPassColorAttachment {
-                            view: &frame.output.view,
-                            resolve_target: None,
-                            ops: wgpu::Operations {
-                                load: wgpu::LoadOp::Clear(clear_color),
-                                store: true,
-                            },
-                        }],
-                        depth_stencil_attachment: None,
-                    });
-
                     renderer
-                        .render(ui.render(), &queue, &device, &mut rpass)
+                        .render(ui.render(), &device, &mut encoder, &frame.view)
                         .expect("Rendering failed");
 
-                    drop(rpass);
-
-                    queue.submit(Some(encoder.finish()));
+                    queue.submit(&[(encoder.finish())]);
                 }
                 _ => (),
             }

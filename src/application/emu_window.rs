@@ -1,11 +1,8 @@
 use crate::emulator::chip8::Emulator;
 use crate::emulator::screen::Screen;
+use crate::imgui_wgpu_backend::Renderer;
 use imgui::*;
-use imgui_wgpu::{Renderer, Texture, TextureConfig};
-use wgpu::{
-    CommandEncoderDescriptor, Device, Extent3d, ImageCopyTexture, ImageDataLayout, Origin3d, Queue,
-    TextureFormat, TextureUsage,
-};
+use wgpu::{Device, Queue};
 
 pub struct RGBA {
     pub r: f32,
@@ -51,12 +48,7 @@ impl EmulatorWindow {
                 b: 0.38f32,
                 a: 1.0f32,
             },
-            tex_id: EmulatorWindow::create_texture(
-                renderer,
-                device,
-                Screen::WIDTH as u32,
-                Screen::HEIGHT as u32,
-            ),
+            tex_id: renderer.create_texture(device, Screen::WIDTH as u32, Screen::HEIGHT as u32),
         }
     }
 
@@ -74,16 +66,6 @@ impl EmulatorWindow {
                 .tint_col(self.color.to_array())
                 .build(&ui);
 
-                let mut color = self.color.to_array();
-                imgui::ColorEdit::new(im_str!("Main Color"), &mut color).build(&ui);
-                self.color = RGBA {
-                    r: color[0],
-                    g: color[1],
-                    b: color[2],
-                    a: color[3],
-                };
-
-                ui.same_line(0.0f32);
                 if ui.button(im_str!("PAUSE"), [0f32, 0f32]) {
                     emulator.pause = true;
                 }
@@ -97,6 +79,16 @@ impl EmulatorWindow {
                     emulator.execute_cycle(dt);
                     emulator.pause = true;
                 }
+
+                ui.same_line(0.0f32);
+                let mut color = self.color.to_array();
+                imgui::ColorEdit::new(im_str!("Main Color"), &mut color).build(&ui);
+                self.color = RGBA {
+                    r: color[0],
+                    g: color[1],
+                    b: color[2],
+                    a: color[3],
+                };
             });
     }
 
@@ -110,79 +102,24 @@ impl EmulatorWindow {
         for x in 0..self.width {
             for y in 0..self.height {
                 let v = if emulator.screen.get_pixel(x, y) == 1 {
-                    0xFF
+                    255
                 } else {
                     0
                 };
 
                 let pos = (y * 4 * self.width) + (x * 4);
-                self.data[pos..pos + 4].copy_from_slice(&[v, v, v, 0xFF]);
+                self.data[pos..pos + 4].copy_from_slice(&[v, v, v, 255]);
             }
         }
 
         // Uploaded updated screen texture data
-        self.update_texture(renderer, &device, &mut queue);
-    }
-
-    /// Creates a new wgpu texture made from the imgui font atlas.
-    fn create_texture(
-        renderer: &mut Renderer,
-        device: &Device,
-        width: u32,
-        height: u32,
-    ) -> TextureId {
-        // Create the wgpu texture.
-        let texture_config = TextureConfig {
-            label: None,
-            size: Extent3d {
-                width,
-                height,
-                depth_or_array_layers: 1,
-            },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: Some(TextureFormat::Rgba8Unorm),
-            usage: TextureUsage::SAMPLED | TextureUsage::COPY_DST,
-        };
-
-        let texture = Texture::new(&device, &renderer, texture_config);
-
-        renderer.textures.insert(texture)
-    }
-
-    /// Creates and uploads a new wgpu texture made from the imgui font atlas.
-    fn update_texture(
-        &mut self,
-        renderer: &Renderer,
-        device: &Device,
-        queue: &mut Queue,
-    ) -> Option<bool> {
-        // Make sure we have an active encoder.
-        let encoder = device.create_command_encoder(&CommandEncoderDescriptor { label: None });
-
-        queue.write_texture(
-            ImageCopyTexture {
-                texture: &renderer.textures.get(self.tex_id)?.texture(),
-                mip_level: 0,
-                origin: Origin3d { x: 0, y: 0, z: 0 },
-            },
+        renderer.update_texture(
+            self.tex_id,
+            &device,
+            &mut queue,
             &self.data,
-            ImageDataLayout {
-                offset: 0,
-                bytes_per_row: std::num::NonZeroU32::new(self.width as u32 * 4),
-                rows_per_image: std::num::NonZeroU32::new(self.height as u32),
-            },
-            Extent3d {
-                width: self.width as u32,
-                height: self.height as u32,
-                depth_or_array_layers: 1,
-            },
+            self.width as u32,
+            self.height as u32,
         );
-
-        // Resolve the actual copy process.
-        queue.submit(Some(encoder.finish()));
-
-        Some(true)
     }
 }

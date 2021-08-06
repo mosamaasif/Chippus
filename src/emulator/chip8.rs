@@ -153,8 +153,8 @@ impl Emulator {
                         let y = nibbles.2 as usize;
                         let (res, overflow) = self.v[x].overflowing_add(self.v[y]);
 
-                        self.v[x] = res;
                         self.v[0xF] = overflow as u8;
+                        self.v[x] = res;
                     }
                     // SUB value of register Vy from Vx and set in Vx (SUB Vx, Vy) (8xy5)
                     0x5 => {
@@ -162,8 +162,8 @@ impl Emulator {
                         let y = nibbles.2 as usize;
                         let (res, overflow) = self.v[x].overflowing_sub(self.v[y]);
 
-                        self.v[x] = res;
                         self.v[0xF] = !overflow as u8;
+                        self.v[x] = res;
                     }
                     // Shift right Vx by 1 (SHR Vx) {, Vy} (8xy6)
                     0x6 => {
@@ -177,8 +177,8 @@ impl Emulator {
                         let y = nibbles.2 as usize;
                         let (res, overflow) = self.v[y].overflowing_sub(self.v[x]);
 
-                        self.v[x] = res;
                         self.v[0xF] = !overflow as u8;
+                        self.v[x] = res;
                     }
                     // Shift left Vx by 1 (SHL Vx) {, Vy} (8xyE)
                     0xE => {
@@ -307,7 +307,7 @@ impl Emulator {
 
             // To enter a subroutine (SYS addr) (0nnn)
             (0, _, _, _) => {
-                // ignoring 0nnn, this is for older computer.
+                // ignoring 0nnn, this is for older computers.
             }
 
             _ => {}

@@ -2,6 +2,7 @@ use application::app::Application;
 
 mod application;
 mod emulator;
+mod imgui_wgpu_backend;
 
 use std::rc::Rc;
 
