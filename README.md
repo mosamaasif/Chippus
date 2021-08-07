@@ -7,7 +7,7 @@
     <img src="images/logo.png" alt="Logo" width="80" height="80">
   </a>
 
-  <h3 align="center">CHIPPUS - A Chip8 Emulator</h3>
+  <h3 align="center">CHIPPUS - A Chip8 Emulator (WIP)</h3>
 
   <p align="center">
   A Chip8 Emulator written in Rust
