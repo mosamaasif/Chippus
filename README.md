@@ -55,8 +55,8 @@ to familiarize myself with Rust and have fun too. The emulator has a UI, and mul
 
 * [Rust](https://www.rust-lang.org)
 * [Imgui-rs](https://github.com/imgui-rs/imgui-rs)
-* [Imgui-Wgpu](https://github.com/Yatekii/imgui-wgpu-rs)
-
+* [Imgui-Wgpu](https://github.com/Yatekii/imgui-wgpu-rs) - Since I needed Nearest Filtering Mode for Textures, and right now since there is no method in the Imgui-wgpu-rs to pass that from outside, I copied the entire lib.rs code and added it into my own project and modified where needed.
+* [ROMs](https://github.com/dmatlack/chip8/tree/master/roms)
 
 ## Demo
 * When a subdirectory is being preprocessed
