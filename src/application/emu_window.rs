@@ -1,10 +1,10 @@
 use crate::emulator::chip8::Emulator;
 use crate::emulator::screen::Screen;
+use crate::imgui_wgpu_backend::{Renderer, Texture, TextureConfig};
 use imgui::*;
-use imgui_wgpu::{Renderer, Texture, TextureConfig};
 use wgpu::{
     CommandEncoderDescriptor, Device, Extent3d, ImageCopyTexture, ImageDataLayout, Origin3d, Queue,
-    TextureDescriptor, TextureFormat, TextureUsage,
+    TextureFormat, TextureUsage,
 };
 
 pub struct RGBA {
@@ -46,9 +46,9 @@ impl EmulatorWindow {
             height: Screen::HEIGHT,
             scale: 11.0f32,
             color: RGBA {
-                r: 0.19f32,
-                g: 0.66f32,
-                b: 0.38f32,
+                r: 0.0f32,
+                g: 0.76f32,
+                b: 0.02f32,
                 a: 1.0f32,
             },
             tex_id: EmulatorWindow::create_texture(

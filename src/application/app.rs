@@ -1,10 +1,10 @@
 use super::emu_window::{self, EmulatorWindow};
 use crate::emulator::{chip8, keyboard::Keyboard};
+use crate::imgui_wgpu_backend::{Renderer, RendererConfig};
 use emu_window::RGBA;
 use futures::executor::block_on;
 use glob::glob;
 use imgui::*;
-use imgui_wgpu::{Renderer, RendererConfig};
 use imgui_winit_support;
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -33,13 +33,13 @@ impl Application {
     pub fn render(&mut self, ui: &imgui::Ui) {
         // Window with list of ROMs
         let win = imgui::Window::new(im_str!("ROMs Available"));
-        win.size([355.0f32, 623.0f32], Condition::Once)
+        win.size([363.0f32, 623.0f32], Condition::Once)
             .position([1031.0f32, 5.0f32], Condition::Once)
             .resizable(false)
             .build(&ui, || {
                 for rom in &self.roms {
                     let filename = ImString::new(rom.file_name().unwrap().to_str().unwrap());
-                    if ui.button(&filename, [0 as f32, 0 as f32]) {
+                    if ui.button(&filename, [333.0f32, 0f32]) {
                         self.emulator.load_rom(rom);
                     }
                 }
@@ -118,29 +118,29 @@ impl Application {
         style.window_rounding = 8.0;
         style.scrollbar_rounding = 8.0;
         style.frame_rounding = 8.0;
-        style[imgui::StyleColor::TitleBg] = RGBA::to_rgba_normalized([110, 110, 100, 62]);
-        style[imgui::StyleColor::TitleBgCollapsed] = RGBA::to_rgba_normalized([110, 110, 100, 52]);
-        style[imgui::StyleColor::TitleBgActive] = RGBA::to_rgba_normalized([110, 110, 100, 87]);
-        style[imgui::StyleColor::Header] = RGBA::to_rgba_normalized([110, 110, 110, 52]);
-        style[imgui::StyleColor::HeaderHovered] = RGBA::to_rgba_normalized([110, 110, 110, 92]);
-        style[imgui::StyleColor::HeaderActive] = RGBA::to_rgba_normalized([110, 110, 110, 72]);
-        style[imgui::StyleColor::ScrollbarBg] = RGBA::to_rgba_normalized([110, 110, 110, 12]);
-        style[imgui::StyleColor::ScrollbarGrab] = RGBA::to_rgba_normalized([110, 110, 110, 52]);
+        style[imgui::StyleColor::TitleBg] = RGBA::to_rgba_normalized([94, 69, 75, 62]);
+        style[imgui::StyleColor::TitleBgCollapsed] = RGBA::to_rgba_normalized([94, 69, 75, 52]);
+        style[imgui::StyleColor::TitleBgActive] = RGBA::to_rgba_normalized([94, 69, 75, 87]);
+        style[imgui::StyleColor::Header] = RGBA::to_rgba_normalized([216, 179, 312, 52]);
+        style[imgui::StyleColor::HeaderHovered] = RGBA::to_rgba_normalized([216, 179, 132, 92]);
+        style[imgui::StyleColor::HeaderActive] = RGBA::to_rgba_normalized([216, 179, 132, 72]);
+        style[imgui::StyleColor::ScrollbarBg] = RGBA::to_rgba_normalized([216, 179, 132, 12]);
+        style[imgui::StyleColor::ScrollbarGrab] = RGBA::to_rgba_normalized([216, 179, 132, 52]);
         style[imgui::StyleColor::ScrollbarGrabHovered] =
-            RGBA::to_rgba_normalized([110, 110, 110, 92]);
+            RGBA::to_rgba_normalized([216, 179, 312, 92]);
         style[imgui::StyleColor::ScrollbarGrabActive] =
-            RGBA::to_rgba_normalized([110, 110, 110, 72]);
-        style[imgui::StyleColor::SliderGrab] = RGBA::to_rgba_normalized([110, 110, 110, 52]);
-        style[imgui::StyleColor::SliderGrabActive] = RGBA::to_rgba_normalized([110, 110, 110, 72]);
-        style[imgui::StyleColor::Button] = RGBA::to_rgba_normalized([182, 182, 182, 60]);
-        style[imgui::StyleColor::ButtonHovered] = RGBA::to_rgba_normalized([182, 182, 182, 200]);
-        style[imgui::StyleColor::ButtonActive] = RGBA::to_rgba_normalized([182, 182, 182, 140]);
+            RGBA::to_rgba_normalized([216, 179, 312, 72]);
+        style[imgui::StyleColor::SliderGrab] = RGBA::to_rgba_normalized([216, 179, 312, 52]);
+        style[imgui::StyleColor::SliderGrabActive] = RGBA::to_rgba_normalized([216, 179, 312, 72]);
+        style[imgui::StyleColor::Button] = RGBA::to_rgba_normalized([206, 229, 208, 30]);
+        style[imgui::StyleColor::ButtonHovered] = RGBA::to_rgba_normalized([206, 229, 208, 100]);
+        style[imgui::StyleColor::ButtonActive] = RGBA::to_rgba_normalized([206, 229, 208, 60]);
         style[imgui::StyleColor::PopupBg] = RGBA::to_rgba_normalized([0, 0, 0, 230]);
         style[imgui::StyleColor::TextSelectedBg] = RGBA::to_rgba_normalized([10, 23, 18, 180]);
-        style[imgui::StyleColor::FrameBg] = RGBA::to_rgba_normalized([70, 70, 70, 30]);
-        style[imgui::StyleColor::FrameBgHovered] = RGBA::to_rgba_normalized([70, 70, 70, 70]);
-        style[imgui::StyleColor::FrameBgActive] = RGBA::to_rgba_normalized([70, 70, 70, 50]);
-        style[imgui::StyleColor::MenuBarBg] = RGBA::to_rgba_normalized([70, 70, 70, 30]);
+        style[imgui::StyleColor::FrameBg] = RGBA::to_rgba_normalized([216, 179, 132, 30]);
+        style[imgui::StyleColor::FrameBgHovered] = RGBA::to_rgba_normalized([216, 179, 132, 70]);
+        style[imgui::StyleColor::FrameBgActive] = RGBA::to_rgba_normalized([216, 179, 132, 50]);
+        style[imgui::StyleColor::MenuBarBg] = RGBA::to_rgba_normalized([216, 179, 132, 30]);
     }
 
     fn load_roms() -> Vec<PathBuf> {
@@ -162,7 +162,6 @@ impl Application {
     }
 
     pub fn run(mut self: Rc<Self>) {
-        env_logger::init();
         // Set up window and GPU
         let event_loop = EventLoop::new();
 
@@ -172,7 +171,7 @@ impl Application {
             let window = Window::new(&event_loop).unwrap();
             window.set_resizable(false);
             window.set_inner_size(LogicalSize {
-                width: 1390.0,
+                width: 1398.0,
                 height: 632.0,
             });
             window.set_title("CHIPPUS - CHIP8 EMU");
