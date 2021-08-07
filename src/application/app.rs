@@ -113,6 +113,36 @@ impl Application {
             });
     }
 
+    fn style_ui(&self, imgui: &mut Context) {
+        let style = imgui.style_mut();
+        style.window_rounding = 8.0;
+        style.scrollbar_rounding = 8.0;
+        style.frame_rounding = 8.0;
+        style[imgui::StyleColor::TitleBg] = RGBA::to_rgba_normalized([110, 110, 100, 62]);
+        style[imgui::StyleColor::TitleBgCollapsed] = RGBA::to_rgba_normalized([110, 110, 100, 52]);
+        style[imgui::StyleColor::TitleBgActive] = RGBA::to_rgba_normalized([110, 110, 100, 87]);
+        style[imgui::StyleColor::Header] = RGBA::to_rgba_normalized([110, 110, 110, 52]);
+        style[imgui::StyleColor::HeaderHovered] = RGBA::to_rgba_normalized([110, 110, 110, 92]);
+        style[imgui::StyleColor::HeaderActive] = RGBA::to_rgba_normalized([110, 110, 110, 72]);
+        style[imgui::StyleColor::ScrollbarBg] = RGBA::to_rgba_normalized([110, 110, 110, 12]);
+        style[imgui::StyleColor::ScrollbarGrab] = RGBA::to_rgba_normalized([110, 110, 110, 52]);
+        style[imgui::StyleColor::ScrollbarGrabHovered] =
+            RGBA::to_rgba_normalized([110, 110, 110, 92]);
+        style[imgui::StyleColor::ScrollbarGrabActive] =
+            RGBA::to_rgba_normalized([110, 110, 110, 72]);
+        style[imgui::StyleColor::SliderGrab] = RGBA::to_rgba_normalized([110, 110, 110, 52]);
+        style[imgui::StyleColor::SliderGrabActive] = RGBA::to_rgba_normalized([110, 110, 110, 72]);
+        style[imgui::StyleColor::Button] = RGBA::to_rgba_normalized([182, 182, 182, 60]);
+        style[imgui::StyleColor::ButtonHovered] = RGBA::to_rgba_normalized([182, 182, 182, 200]);
+        style[imgui::StyleColor::ButtonActive] = RGBA::to_rgba_normalized([182, 182, 182, 140]);
+        style[imgui::StyleColor::PopupBg] = RGBA::to_rgba_normalized([0, 0, 0, 230]);
+        style[imgui::StyleColor::TextSelectedBg] = RGBA::to_rgba_normalized([10, 23, 18, 180]);
+        style[imgui::StyleColor::FrameBg] = RGBA::to_rgba_normalized([70, 70, 70, 30]);
+        style[imgui::StyleColor::FrameBgHovered] = RGBA::to_rgba_normalized([70, 70, 70, 70]);
+        style[imgui::StyleColor::FrameBgActive] = RGBA::to_rgba_normalized([70, 70, 70, 50]);
+        style[imgui::StyleColor::MenuBarBg] = RGBA::to_rgba_normalized([70, 70, 70, 30]);
+    }
+
     fn load_roms() -> Vec<PathBuf> {
         let executable_path = std::env::current_exe();
         let rom_path = executable_path
@@ -199,34 +229,7 @@ impl Application {
             }),
         }]);
 
-        // Restyle a bit
-        // let style = imgui.style_mut();
-        // style.window_rounding = 8.0;
-        // style.scrollbar_rounding = 8.0;
-        // style.frame_rounding = 8.0;
-        // style[imgui::StyleColor::TitleBg] = RGBA::to_rgba_normalized([110, 110, 100, 62]);
-        // style[imgui::StyleColor::TitleBgCollapsed] = RGBA::to_rgba_normalized([110, 110, 100, 52]);
-        // style[imgui::StyleColor::TitleBgActive] = RGBA::to_rgba_normalized([110, 110, 100, 87]);
-        // style[imgui::StyleColor::Header] = RGBA::to_rgba_normalized([110, 110, 110, 52]);
-        // style[imgui::StyleColor::HeaderHovered] = RGBA::to_rgba_normalized([110, 110, 110, 92]);
-        // style[imgui::StyleColor::HeaderActive] = RGBA::to_rgba_normalized([110, 110, 110, 72]);
-        // style[imgui::StyleColor::ScrollbarBg] = RGBA::to_rgba_normalized([110, 110, 110, 12]);
-        // style[imgui::StyleColor::ScrollbarGrab] = RGBA::to_rgba_normalized([110, 110, 110, 52]);
-        // style[imgui::StyleColor::ScrollbarGrabHovered] =
-        //     RGBA::to_rgba_normalized([110, 110, 110, 92]);
-        // style[imgui::StyleColor::ScrollbarGrabActive] =
-        //     RGBA::to_rgba_normalized([110, 110, 110, 72]);
-        // style[imgui::StyleColor::SliderGrab] = RGBA::to_rgba_normalized([110, 110, 110, 52]);
-        // style[imgui::StyleColor::SliderGrabActive] = RGBA::to_rgba_normalized([110, 110, 110, 72]);
-        // style[imgui::StyleColor::Button] = RGBA::to_rgba_normalized([182, 182, 182, 60]);
-        // style[imgui::StyleColor::ButtonHovered] = RGBA::to_rgba_normalized([182, 182, 182, 200]);
-        // style[imgui::StyleColor::ButtonActive] = RGBA::to_rgba_normalized([182, 182, 182, 140]);
-        // style[imgui::StyleColor::PopupBg] = RGBA::to_rgba_normalized([0, 0, 0, 230]);
-        // style[imgui::StyleColor::TextSelectedBg] = RGBA::to_rgba_normalized([10, 23, 18, 180]);
-        // style[imgui::StyleColor::FrameBg] = RGBA::to_rgba_normalized([70, 70, 70, 30]);
-        // style[imgui::StyleColor::FrameBgHovered] = RGBA::to_rgba_normalized([70, 70, 70, 70]);
-        // style[imgui::StyleColor::FrameBgActive] = RGBA::to_rgba_normalized([70, 70, 70, 50]);
-        // style[imgui::StyleColor::MenuBarBg] = RGBA::to_rgba_normalized([70, 70, 70, 30]);
+        self.style_ui(&mut imgui);
 
         // Setup dear imgui wgpu renderer
         let clear_color = wgpu::Color {

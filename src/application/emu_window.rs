@@ -4,7 +4,7 @@ use imgui::*;
 use imgui_wgpu::{Renderer, Texture, TextureConfig};
 use wgpu::{
     CommandEncoderDescriptor, Device, Extent3d, ImageCopyTexture, ImageDataLayout, Origin3d, Queue,
-    TextureFormat, TextureUsage,
+    TextureDescriptor, TextureFormat, TextureUsage,
 };
 
 pub struct RGBA {
@@ -74,16 +74,6 @@ impl EmulatorWindow {
                 .tint_col(self.color.to_array())
                 .build(&ui);
 
-                let mut color = self.color.to_array();
-                imgui::ColorEdit::new(im_str!("Main Color"), &mut color).build(&ui);
-                self.color = RGBA {
-                    r: color[0],
-                    g: color[1],
-                    b: color[2],
-                    a: color[3],
-                };
-
-                ui.same_line(0.0f32);
                 if ui.button(im_str!("PAUSE"), [0f32, 0f32]) {
                     emulator.pause = true;
                 }
@@ -97,6 +87,16 @@ impl EmulatorWindow {
                     emulator.execute_cycle(dt);
                     emulator.pause = true;
                 }
+
+                ui.same_line(0.0f32);
+                let mut color = self.color.to_array();
+                imgui::ColorEdit::new(im_str!("Main Color"), &mut color).build(&ui);
+                self.color = RGBA {
+                    r: color[0],
+                    g: color[1],
+                    b: color[2],
+                    a: color[3],
+                };
             });
     }
 
@@ -170,7 +170,9 @@ impl EmulatorWindow {
             &self.data,
             ImageDataLayout {
                 offset: 0,
-                bytes_per_row: std::num::NonZeroU32::new(self.width as u32 * 4),
+                bytes_per_row: std::num::NonZeroU32::new(
+                    self.data.len() as u32 / self.height as u32,
+                ),
                 rows_per_image: std::num::NonZeroU32::new(self.height as u32),
             },
             Extent3d {
