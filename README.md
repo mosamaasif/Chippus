@@ -59,7 +59,7 @@ to familiarize myself with Rust and have fun too. The emulator has a UI, and mul
 * [ROMs](https://github.com/dmatlack/chip8/tree/master/roms)
 
 ## Demo
-* When a subdirectory is being preprocessed
+* Example of Execution
   <img src="images/demo.gif">
 
 <!-- GETTING STARTED -->
