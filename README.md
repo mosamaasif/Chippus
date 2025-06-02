@@ -47,8 +47,9 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-This is an "emulator" for <a href="https://en.wikipedia.org/wiki/CHIP-8"><i>Chip8</i></a> which is an old interpreted language. I did this is a learning project,
-to familiarize myself with Rust and have fun too. The emulator has a UI, and multiple roms are provided (more can be added, check Usage).
+This is an "emulator" for <a href="https://en.wikipedia.org/wiki/CHIP-8"><i>Chip8</i></a> which is an old interpreted language. I did this is as learning project,
+to familiarize myself with Rust and have fun along with it. As such it may not be the best implementation as I mainly focused on understanding the syntax and workings of Rust. 
+The emulator has a UI, and multiple roms are provided (more can be added, check Usage).
 
 
 ### Built With
