@@ -1,118 +1,57 @@
-[![MIT License][license-shield]][license-url]
+# Chippus
 
-<!-- PROJECT LOGO -->
-<br />
-<p align="center">
-  <a href="https://github.com/github_username/repo_name">
-    <img src="images/logo.png" alt="Logo" width="80" height="80">
-  </a>
+A Chip-8 emulator with a GUI, written in Rust.
 
-  <h3 align="center">CHIPPUS - A Chip8 Emulator (WIP)</h3>
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/mosamaasif/Chippus/blob/master/LICENSE)
 
-  <p align="center">
-  A Chip8 Emulator written in Rust
-  </p>
-</p>
+## About
 
-
-
-<!-- TABLE OF CONTENTS -->
-<details open="open">
-  <summary><h2 style="display: inline-block">Table of Contents</h2></summary>
-  <ol>
-    <li>
-      <a href="#about-the-project">About The Project</a>
-      <ul>
-        <li><a href="#built-with">Built With</a></li>
-      </ul>
-    </li>
-    <li>
-      <a href="#getting-started">Getting Started</a>
-      <ul>
-        <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#installation">Installation</a></li>
-      </ul>
-    </li>
-    <li><a href="#usage">Usage</a></li>
-    <ul>
-        <li><a href="#how-to-run">How to Run</a></li>
-        <li><a href="#example-images">Example Images</a></li>
-      </ul>
-    <li><a href="#license">License</a></li>
-  </ol>
-</details>
-
-
-
-<!-- ABOUT THE PROJECT -->
-## About The Project
-
-This is an "emulator" for <a href="https://en.wikipedia.org/wiki/CHIP-8"><i>Chip8</i></a> which is an old interpreted language. I did this is as learning project,
-to familiarize myself with Rust and have fun along with it. As such it may not be the best implementation as I mainly focused on understanding the syntax and workings of Rust. 
-The emulator has a UI, and multiple roms are provided (more can be added, check Usage).
-
-
-### Built With
-
-* [Rust](https://www.rust-lang.org)
-* [Imgui-rs](https://github.com/imgui-rs/imgui-rs)
-* [Imgui-Wgpu](https://github.com/Yatekii/imgui-wgpu-rs) - Since I needed Nearest Filtering Mode for Textures, and right now since there is no method in the Imgui-wgpu-rs to pass that from outside, I copied the entire lib.rs code and added it into my own project and modified where needed.
-* [ROMs](https://github.com/dmatlack/chip8/tree/master/roms)
+This is a [Chip-8](https://en.wikipedia.org/wiki/CHIP-8) emulator I wrote as a learning project to get familiar with Rust. It has a full GUI built with Dear ImGui, and comes bundled with a large collection of ROMs (games, demos, hi-res programs). You can pause, step through execution, and change the display color on the fly. It may not be the most optimized implementation, but the focus was on understanding Rust's syntax and ownership model while having fun.
 
 ## Demo
-* Example of Execution
-  <img src="images/demo.gif">
 
-<!-- GETTING STARTED -->
+![Chippus Demo](images/demo.gif)
+
+## Features
+
+- Full Chip-8 instruction set emulation
+- ImGui-based UI with a ROM browser sidebar
+- Pause, Start, and Step buttons for debugging execution
+- Color picker to change the display tint in real time
+- 80+ bundled ROMs (games, demos, hi-res, and utility programs)
+- Drop additional `.ch8` ROMs into the `roms/` folder and they appear automatically
+
+## Built With
+
+- [Rust](https://www.rust-lang.org)
+- [imgui-rs](https://github.com/imgui-rs/imgui-rs) — Dear ImGui bindings for Rust
+- [wgpu](https://wgpu.rs/) — rendering backend (with a vendored imgui-wgpu integration modified for nearest-neighbor filtering)
+- [winit](https://github.com/rust-windowing/winit) — window management
+
 ## Getting Started
-
-To get a local copy up and running follow these simple steps.
 
 ### Prerequisites
 
-* [Rust](https://www.rust-lang.org/tools/install)
-* [git](https://git-scm.com)
+- [Rust](https://www.rust-lang.org/tools/install) (2018 edition or later)
 
-### Installation
+### Building & Running
 
-1. Clone the repo
-   ```sh
-   git clone https://github.com/saeenyoda/Chippus
-   ```
+```sh
+git clone https://github.com/mosamaasif/Chippus.git
+cd Chippus
+cargo run
+```
 
-## Usage
+Select a ROM from the list on the right side of the window to start running it.
 
-### How to Run
-1. Open up command line or terminal and navigate to the cloned repo's directory
-   ```sh
-   cd "PATH-TO-DIRECTORY"
-   ```
-2. Run with
-   ```sh
-   cargo run
-   ```
+![Main Screen](images/main_screen.png)
 
-* This will download all dependencies and show the following screen:
-<img src="images/main_screen.png">
+Use the Pause, Start, and Step buttons to control execution, and the color picker to change the display color.
 
-* Now Select one of the ROMs from the list on the right, and it will run.
-    
-   ***NOTE:***  
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`You can add more ROMs (compatible with original CHIP-8, not modified ones) and to do so, just put the .ch8 file in the roms folder, and run the program.`
-    
+![Options](images/options.png)
 
-* You can also pause, start and step through the execution with the buttons in the emulator screen. You can also change color of output with the color picker
-  in the emulator screen. (Image below).
-  
-  <img src="images/options.png">
+To add more ROMs, place `.ch8` files (compatible with the original Chip-8 spec) in the `roms/` folder and relaunch.
 
-<!-- LICENSE -->
 ## License
 
-Distributed under the MIT License. See `LICENSE` for more information.
-
-
-<!-- MARKDOWN LINKS & IMAGES -->
-<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[license-shield]: https://img.shields.io/github/license/saeenyoda/Inverted_Indexing?label=license&style=for-the-badge
-[license-url]: https://github.com/saeenyoda/Inverted_Indexing/blob/master/LICENSE
+Distributed under the MIT License. See [LICENSE](LICENSE) for details.
